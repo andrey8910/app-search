@@ -1,0 +1,36 @@
+
+<div class="search-section">
+
+    <mat-form-field class="input-search-block">
+      <mat-label>enter text to search</mat-label>
+      <input
+        matInput
+        #inputSearch
+        type="text"
+        autofocus
+        [formControl]="searchInputControl"
+      >
+      <mat-spinner matSuffix class="progress-spinner" [diameter]="22" *ngIf="isLoading" ></mat-spinner>
+      <mat-error *ngIf="searchInputControl.invalid">{{getErrorMessage()}}</mat-error>
+    </mat-form-field>
+
+  <ng-container *ngIf="!isSelectedItem">
+
+    <div #searchBlock class="result-search-block">
+      <div class="not-found" *ngIf="isNotResult">
+        <p>not found</p>
+      </div>
+      <div #searchResult class="result-search-list" >
+        <div class="result-search-item"
+             *ngFor="let searchItem of resultSearchList"
+             (click)="selectByClick($event)"
+             (keydown)="selectByKey($event)"
+        >
+          <p>{{searchItem.title}}</p>
+        </div>
+      </div>
+    </div>
+  </ng-container>
+
+</div>
+
