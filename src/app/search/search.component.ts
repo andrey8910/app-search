@@ -30,12 +30,12 @@ export class SearchComponent implements OnInit, OnDestroy{
   @ViewChild('searchBlock', {static: false}) searchBlock: ElementRef;
   @ViewChild('searchResult', {static: false}) searchResult: ElementRef;
 
-  public isLoading = false;
-  public isNotResult = false;
-  public isSelectedItem = false;
-  public searchInputControl: FormControl;
-  public resultSearchList : any[] = [];
-  public infiniteScrollObserver = new IntersectionObserver(
+   isLoading = false;
+   isNotResult = false;
+   isSelectedItem = false;
+   searchInputControl: FormControl = this.fb.control('', []);
+   resultSearchList : any[] = [];
+   infiniteScrollObserver = new IntersectionObserver(
     ([entry], observer) =>{
       if(entry.isIntersecting){
         observer.unobserve(entry.target);
@@ -47,7 +47,7 @@ export class SearchComponent implements OnInit, OnDestroy{
       }
     }, {threshold: 1}
   )
-  private destroy$: Subject<boolean> = new Subject<boolean>();
+  private destroy$ = new Subject();
   private nextPage = 2;
   private remainItem = 0;
 
@@ -59,13 +59,11 @@ export class SearchComponent implements OnInit, OnDestroy{
     private elementRef: ElementRef,
     private ref: ChangeDetectorRef) {}
 
-  ngOnInit():void {
+  ngOnInit() {
     this.init();
   }
 
-  init():void{
-    this.searchInputControl = this.fb.control('', []);
-
+  init(){
     const searchResult = fromEvent<KeyboardEvent>(this.inputSearch.nativeElement,'keyup' ).pipe(
       tap( (event:KeyboardEvent) => {
         if(this.searchInputControl.value.length > 0 && event.code !== 'ArrowDown' && event.code !== 'ArrowLeft' && event.code !== 'ArrowRight'){
@@ -80,7 +78,7 @@ export class SearchComponent implements OnInit, OnDestroy{
       }),
       debounceTime(1500),
       tap((event:KeyboardEvent) => {
-        if(this.searchInputControl.value.length == 0){
+        if(this.searchInputControl.value.length === 0){
           this.isLoading = false;
           this.resultSearchList = [];
           this.ref.markForCheck();
@@ -149,7 +147,8 @@ export class SearchComponent implements OnInit, OnDestroy{
         if(this.searchResult?.nativeElement.lastElementChild !== null){
           this.infiniteScrollObserver.observe(this.searchResult?.nativeElement.lastElementChild);
         }
-      })
+      }),
+      takeUntil(this.destroy$)
     ).subscribe()
   }
 
@@ -187,9 +186,9 @@ export class SearchComponent implements OnInit, OnDestroy{
 
 
   private focusNextItem() {
-    const item  = document.activeElement as HTMLDivElement;
+    const item  = document.activeElement as HTMLElement;
     if(item.nextElementSibling){
-      this.activateFocus(item.nextElementSibling);
+      this.activateFocus(item.nextElementSibling as HTMLElement);
       item.tabIndex = -1;
     }else{
       this.activateFocus( this.searchResult?.nativeElement.firstElementChild);
@@ -198,9 +197,9 @@ export class SearchComponent implements OnInit, OnDestroy{
   }
 
   private focusPreviousItem() {
-    const item  = document.activeElement as HTMLDivElement;
+    const item  = document.activeElement as HTMLElement;
     if (item.previousElementSibling) {
-      this.activateFocus(item.previousElementSibling);
+      this.activateFocus(item.previousElementSibling as HTMLElement);
       item.tabIndex = -1;
     }else{
       this.activateFocus( this.searchResult?.nativeElement.lastElementChild);
@@ -208,14 +207,14 @@ export class SearchComponent implements OnInit, OnDestroy{
     }
   }
 
-  private activateFocus(item: any) {
+  private activateFocus(item:HTMLElement) {
     item.tabIndex = 0;
     item.focus();
   }
 
   ngOnDestroy() {
     this.destroy$.next(true);
-    this.destroy$.unsubscribe();
+    this.destroy$.complete();
   }
 
 }
