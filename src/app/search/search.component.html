@@ -9,16 +9,17 @@
         type="text"
         autofocus
         [formControl]="searchInputControl"
+        (keyup)="focusResultFirstItem($event)"
       >
       <mat-spinner matSuffix class="progress-spinner" [diameter]="22" *ngIf="isLoading" ></mat-spinner>
       <mat-error *ngIf="searchInputControl.invalid">{{getErrorMessage()}}</mat-error>
     </mat-form-field>
 
-  <ng-container *ngIf="!isSelectedItem">
+    <ng-container *ngIf="isSelectedItem">
 
     <div #searchBlock class="result-search-block">
       <div class="not-found" *ngIf="isNotResult">
-        <p>not found</p>
+        <p>text not found</p>
       </div>
       <div #searchResult class="result-search-list" >
         <div class="result-search-item"
