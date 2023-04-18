@@ -28,9 +28,9 @@ import {NextOrPrevSibling} from '../next-or-prev-sibling';
 })
 export class SearchComponent implements OnInit, OnDestroy{
 
-  @ViewChild('inputSearch', {static: true}) inputSearch: ElementRef;
-  @ViewChild('searchBlock', {static: false}) searchBlock: ElementRef;
-  @ViewChild('searchResult', {static: false}) searchResult: ElementRef;
+  @ViewChild('inputSearch', {static: true}) inputSearch: ElementRef<HTMLInputElement>;
+  @ViewChild('searchBlock', {static: false}) searchBlock: ElementRef<HTMLDivElement>;
+  @ViewChild('searchResult', {static: false}) searchResult: ElementRef<HTMLDivElement>;
 
    isLoading = false;
    isNotResult = false;
@@ -60,7 +60,8 @@ export class SearchComponent implements OnInit, OnDestroy{
     private httpClient: HttpClient,
     private searchService: SearchService,
     private elementRef: ElementRef,
-    private ref: ChangeDetectorRef) {};
+    private ref: ChangeDetectorRef
+  ) {};
 
   ngOnInit(): void {
     this.init();
@@ -97,7 +98,7 @@ export class SearchComponent implements OnInit, OnDestroy{
   goToSearch(searchText: string, page?: number):void{
     if(!page){
       this.nextPage = 2;
-      if(this.searchBlock?.nativeElement.firstElementChild && this.searchBlock.nativeElement.scrollTop > 0){
+      if(this.searchBlock.nativeElement.firstElementChild && this.searchBlock.nativeElement.scrollTop > 0){
         this.searchBlock.nativeElement.scrollTo({
           top: 0,
           left: 0,
@@ -134,8 +135,8 @@ export class SearchComponent implements OnInit, OnDestroy{
       }),
       delay(1000),
       tap(() => {
-        if(this.searchResult && this.searchResult?.nativeElement.lastElementChild !== null){
-          this.infiniteScrollObserver.observe(this.searchResult?.nativeElement.lastElementChild);
+        if(this.searchResult && this.searchResult.nativeElement.lastElementChild !== null){
+          this.infiniteScrollObserver.observe(this.searchResult.nativeElement.lastElementChild);
         }
       }),
       takeUntil(this.destroy$)
@@ -166,8 +167,8 @@ export class SearchComponent implements OnInit, OnDestroy{
 
   focusResultFirstItem(keyup: KeyboardEvent): void{
     if(keyup.code === 'ArrowDown' && this.searchResult.nativeElement.firstElementChild){
-      this.searchResult.nativeElement.firstElementChild.tabIndex = -1;
-      this.searchResult.nativeElement.firstElementChild.focus();
+      (this.searchResult.nativeElement.firstElementChild as HTMLDivElement).tabIndex  = -1 ;
+      (this.searchResult.nativeElement.firstElementChild as HTMLDivElement).focus();
     }
   };
 
@@ -180,7 +181,7 @@ export class SearchComponent implements OnInit, OnDestroy{
         this.activateFocus(item[NextOrPrevSibling[keyCode]] as HTMLElement);
         item.tabIndex = -1;
       }else{
-        keyCode === 'ArrowUp'? this.activateFocus( this.searchResult?.nativeElement.lastElementChild) : this.activateFocus( this.searchResult?.nativeElement.firstElementChild);
+        keyCode === 'ArrowUp'? this.activateFocus( this.searchResult.nativeElement.lastElementChild as HTMLDivElement) : this.activateFocus( this.searchResult.nativeElement.firstElementChild as HTMLDivElement);
         item.tabIndex = -1;
       }
     }
