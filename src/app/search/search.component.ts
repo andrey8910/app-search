@@ -13,12 +13,13 @@ import {
   takeUntil,
   tap,
   debounceTime,
-  delay,
+  delay, filter, Observable, switchMap,
 } from "rxjs";
 import { distinctUntilChanged } from 'rxjs/operators';
 import {SearchService} from "../search.service";
 import {NextOrPrevSibling} from '../next-or-prev-sibling';
 import {SearchResultData} from "../interfaces/search-result-data";
+import {SearchResultItem} from "../interfaces/search-result-item";
 
 @Component({
   selector: 'app-search',
@@ -33,17 +34,16 @@ export class SearchComponent implements OnInit, OnDestroy{
   @ViewChild('searchResult', {static: false}) searchResult: ElementRef<HTMLDivElement>;
 
    isLoading = false;
-   isNotResult = false;
    isSelectedItem = false;
    searchInputControl = this.fb.nonNullable.control('');
-   resultSearchList : any[] = [];
+   resultSearchList : SearchResultItem[] = [];
    infiniteScrollObserver = new IntersectionObserver(
     ([entry], observer) =>{
       if(entry.isIntersecting){
         observer.unobserve(entry.target);
         if(this.remainItem > 0){
           this.isLoading = true;
-          this.goToSearch(this.searchInputControl.value, this.nextPage++);
+          this.goToSearch(this.searchInputControl.value.trim(), this.nextPage++).pipe(takeUntil(this.destroy$)).subscribe();
         }
         this.ref.markForCheck();
       }
@@ -53,6 +53,10 @@ export class SearchComponent implements OnInit, OnDestroy{
   private destroy$ = new Subject<void>();
   private nextPage = 2;
   private remainItem = 0;
+
+  get isNotFound(): boolean {
+    return this.resultSearchList.length === 0;
+  }
 
 
   constructor(
@@ -72,23 +76,18 @@ export class SearchComponent implements OnInit, OnDestroy{
     this.searchInputControl.valueChanges.pipe(
       tap((value: string) => {
         this.isLoading = true;
-
         if(value.length === 0){
           this.isLoading = false;
           this.resultSearchList = [];
           this.isSelectedItem = false;
           this.ref.markForCheck();
         }
-
         this.ref.markForCheck();
       }),
+      filter((value: string) => value.length > 0),
       distinctUntilChanged(),
       debounceTime(1000),
-      tap((value : string) => {
-          if(value.length > 0){
-            this.goToSearch(value);
-          }
-        }),
+      switchMap( (value: string): Observable<SearchResultData> => this.goToSearch(value.trim())),
       takeUntil(this.destroy$),
     ).subscribe()
   }
@@ -97,7 +96,8 @@ export class SearchComponent implements OnInit, OnDestroy{
     return this.searchInputControl.hasError('pattern') ? 'only letters of the Latin alphabet' : '';
   }
 
-  goToSearch(searchText: string, page?: number):void{
+  goToSearch(searchText: string, page?: number): Observable<SearchResultData>{
+
     if(!page){
       this.nextPage = 2;
       if(this.searchBlock?.nativeElement.firstElementChild && this.searchBlock?.nativeElement.scrollTop > 0){
@@ -109,9 +109,10 @@ export class SearchComponent implements OnInit, OnDestroy{
       }
     }
 
-    this.searchService.getResult(searchText,page).pipe(
+   return this.searchService.getResult(searchText,page).pipe(
+
       tap((searchResult: SearchResultData) => {
-       if(searchResult.items){
+       if(searchResult.items.length > 0 && this.searchInputControl.value.length > 0){
          this.isLoading = false;
          this.isSelectedItem = true;
          this.remainItem = searchResult.totalItems - searchResult.endIndex;
@@ -120,11 +121,10 @@ export class SearchComponent implements OnInit, OnDestroy{
        }
 
        if(searchResult.items.length === 0){
-         this.isNotResult = true;
+         this.isLoading = false;
          this.resultSearchList = [];
-         this.ref.markForCheck();
-       }else{
-         this.isNotResult = false;
+         this.remainItem = 0;
+         this.isSelectedItem = true;
          this.ref.markForCheck();
        }
 
@@ -136,7 +136,7 @@ export class SearchComponent implements OnInit, OnDestroy{
         }
       }),
       takeUntil(this.destroy$)
-    ).subscribe()
+    )
   }
 
   selectByClick(event: MouseEvent): void{
