@@ -115,13 +115,7 @@ export class SearchComponent implements OnInit, OnDestroy{
          this.isLoading = false;
          this.isSelectedItem = true;
          this.remainItem = searchResult.totalItems - searchResult.endIndex;
-
-         if(this.resultSearchList.length === 0){
-           this.resultSearchList = searchResult.items;
-         }else{
-           this.resultSearchList.push(...searchResult.items);
-         }
-
+         this.resultSearchList = [...this.resultSearchList, ...searchResult.items];
          this.ref.markForCheck();
        }
 
