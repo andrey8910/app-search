@@ -51,7 +51,7 @@ export class SearchComponent implements OnInit, OnDestroy{
     }, {threshold: 1}
   );
 
-  private destroy$ = new Subject();
+  private destroy$ = new Subject<void>();
   private nextPage = 2;
   private remainItem = 0;
 
@@ -194,7 +194,7 @@ export class SearchComponent implements OnInit, OnDestroy{
   }
 
   ngOnDestroy(): void {
-    this.destroy$.next(true);
+    this.destroy$.next();
     this.destroy$.complete();
   }
 
