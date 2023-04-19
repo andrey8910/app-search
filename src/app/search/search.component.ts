@@ -9,12 +9,11 @@ import {
 import {FormBuilder} from '@angular/forms';
 import {HttpClient} from "@angular/common/http";
 import {
-  fromEvent,
   Subject,
   takeUntil,
   tap,
   debounceTime,
-  delay, map
+  delay,
 } from "rxjs";
 import { distinctUntilChanged } from 'rxjs/operators';
 import {SearchService} from "../search.service";
@@ -36,7 +35,7 @@ export class SearchComponent implements OnInit, OnDestroy{
    isLoading = false;
    isNotResult = false;
    isSelectedItem = false;
-   searchInputControl = this.fb.nonNullable.control('', []);
+   searchInputControl = this.fb.nonNullable.control('');
    resultSearchList : any[] = [];
    infiniteScrollObserver = new IntersectionObserver(
     ([entry], observer) =>{
@@ -69,26 +68,28 @@ export class SearchComponent implements OnInit, OnDestroy{
   };
 
   init(): void{
-    fromEvent<InputEvent>(this.inputSearch?.nativeElement,'input').pipe(
-      tap((event : InputEvent) => {
+
+    this.searchInputControl.valueChanges.pipe(
+      tap((value: string) => {
         this.isLoading = true;
-        if(this.inputSearch.nativeElement.value.length === 0){
-              this.isLoading = false;
-              this.resultSearchList = [];
-              this.isSelectedItem = false;
-              this.ref.markForCheck();
+
+        if(value.length === 0){
+          this.isLoading = false;
+          this.resultSearchList = [];
+          this.isSelectedItem = false;
+          this.ref.markForCheck();
         }
+
         this.ref.markForCheck();
       }),
-      map(() => this.searchInputControl.value),
       distinctUntilChanged(),
       debounceTime(1000),
-      tap((searchValue : string) => {
-        if(searchValue.length > 0){
-          this.goToSearch(searchValue);
-        }
-      }),
-      takeUntil(this.destroy$)
+      tap((value : string) => {
+          if(value.length > 0){
+            this.goToSearch(value);
+          }
+        }),
+      takeUntil(this.destroy$),
     ).subscribe()
   }
 
@@ -146,7 +147,7 @@ export class SearchComponent implements OnInit, OnDestroy{
 
   selectByClick(event: MouseEvent): void{
     const target = event.target as HTMLDivElement;
-    this.searchInputControl.setValue(target.innerText);
+    this.searchInputControl.setValue(target.innerText, {emitEvent: false});
     this.isSelectedItem = false;
     this.ref.markForCheck()
   }
@@ -155,7 +156,7 @@ export class SearchComponent implements OnInit, OnDestroy{
 
     if(event.code === 'Enter' || event.code === 'NumpadEnter'){
       const target = event.target as HTMLDivElement;
-      this.searchInputControl.setValue(target.innerText);
+      this.searchInputControl.setValue(target.innerText, {emitEvent: false});
       this.isSelectedItem = false;
       this.ref.markForCheck()
     }
