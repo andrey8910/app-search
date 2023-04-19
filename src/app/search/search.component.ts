@@ -19,6 +19,7 @@ import {
 import { distinctUntilChanged } from 'rxjs/operators';
 import {SearchService} from "../search.service";
 import {NextOrPrevSibling} from '../next-or-prev-sibling';
+import {SearchResultData} from "../interfaces/search-result-data";
 
 @Component({
   selector: 'app-search',
@@ -68,7 +69,7 @@ export class SearchComponent implements OnInit, OnDestroy{
   };
 
   init(): void{
-    fromEvent<InputEvent>(this.inputSearch.nativeElement,'input').pipe(
+    fromEvent<InputEvent>(this.inputSearch?.nativeElement,'input').pipe(
       tap((event : InputEvent) => {
         this.isLoading = true;
         if(this.inputSearch.nativeElement.value.length === 0){
@@ -98,7 +99,7 @@ export class SearchComponent implements OnInit, OnDestroy{
   goToSearch(searchText: string, page?: number):void{
     if(!page){
       this.nextPage = 2;
-      if(this.searchBlock.nativeElement.firstElementChild && this.searchBlock.nativeElement.scrollTop > 0){
+      if(this.searchBlock?.nativeElement.firstElementChild && this.searchBlock?.nativeElement.scrollTop > 0){
         this.searchBlock.nativeElement.scrollTo({
           top: 0,
           left: 0,
@@ -108,7 +109,7 @@ export class SearchComponent implements OnInit, OnDestroy{
     }
 
     this.searchService.getResult(searchText,page).pipe(
-      tap((searchResult) => {
+      tap((searchResult: SearchResultData) => {
        if(searchResult.items){
          this.isLoading = false;
          this.isSelectedItem = true;
