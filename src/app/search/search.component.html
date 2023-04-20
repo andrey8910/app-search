@@ -22,13 +22,16 @@
         <p>text not found</p>
       </div>
       <div #searchResult class="result-search-list" >
+        <p>test</p>
         <div class="result-search-item"
-             *ngFor="let searchItem of resultSearchList"
+             *ngFor="let searchItem of resultSearchList; let i = index"
+             [ngClass]="i === 0 ? 'first-item': i === resultSearchList.length - 1 ? 'last-item' : 'search-item' "
              (click)="selectByClick($event)"
              (keydown)="selectByKey($event)"
         >
           <p>{{searchItem.title}}</p>
         </div>
+        <p>test</p>
       </div>
     </div>
   </ng-container>

@@ -162,22 +162,25 @@ export class SearchComponent implements OnInit, OnDestroy{
   }
 
   focusResultFirstItem(keyup: KeyboardEvent): void{
-    if(keyup.code === 'ArrowDown' && this.searchResult.nativeElement.firstElementChild){
-      (this.searchResult.nativeElement.firstElementChild as HTMLDivElement).tabIndex  = -1 ;
-      (this.searchResult.nativeElement.firstElementChild as HTMLDivElement).focus();
+    const firstItem = this.searchResult?.nativeElement.getElementsByClassName('first-item')[0] as HTMLDivElement;
+
+    if(keyup.code === 'ArrowDown' && firstItem){
+      firstItem.tabIndex = -1;
+      firstItem.focus();
     }
   };
 
   private focusSiblingItem(keyCode: string): void {
     const item = document.activeElement as HTMLElement;
-
+    const firstItem = this.searchResult?.nativeElement.getElementsByClassName('first-item')[0] as HTMLDivElement;
+    const lastItem =this.searchResult?.nativeElement.getElementsByClassName('last-item')[0] as HTMLDivElement;
     if(keyCode === 'ArrowUp' || keyCode === 'ArrowDown'){
 
-      if(item[NextOrPrevSibling[keyCode]]){
+      if(item[NextOrPrevSibling[keyCode]] && item[NextOrPrevSibling[keyCode]]?.classList.contains('result-search-item')){
         this.activateFocus(item[NextOrPrevSibling[keyCode]] as HTMLElement);
         item.tabIndex = -1;
       }else{
-        keyCode === 'ArrowUp'? this.activateFocus( this.searchResult.nativeElement.lastElementChild as HTMLDivElement) : this.activateFocus( this.searchResult.nativeElement.firstElementChild as HTMLDivElement);
+        keyCode === 'ArrowUp'? this.activateFocus(lastItem) : this.activateFocus(firstItem);
         item.tabIndex = -1;
       }
     }
