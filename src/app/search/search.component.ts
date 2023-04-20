@@ -3,7 +3,7 @@ import {
   ChangeDetectorRef,
   Component,
   ElementRef, OnDestroy,
-  OnInit,
+  OnInit, Renderer2,
   ViewChild
 } from '@angular/core';
 import {FormBuilder} from '@angular/forms';
@@ -29,7 +29,6 @@ import {SearchResultItem} from "../interfaces/search-result-item";
 })
 export class SearchComponent implements OnInit, OnDestroy{
 
-  @ViewChild('inputSearch', {static: true}) inputSearch: ElementRef<HTMLInputElement>;
   @ViewChild('searchBlock', {static: false}) searchBlock: ElementRef<HTMLDivElement>;
   @ViewChild('searchResult', {static: false}) searchResult: ElementRef<HTMLDivElement>;
 
@@ -43,7 +42,7 @@ export class SearchComponent implements OnInit, OnDestroy{
         observer.unobserve(entry.target);
         if(this.remainItem > 0){
           this.isLoading = true;
-          this.goToSearch(this.searchInputControl.value.trim(), this.nextPage++).pipe(takeUntil(this.destroy$)).subscribe();
+          this.goToSearch(this.searchInputControl.value, this.nextPage++).pipe(takeUntil(this.destroy$)).subscribe();
         }
         this.ref.markForCheck();
       }
@@ -58,13 +57,13 @@ export class SearchComponent implements OnInit, OnDestroy{
     return this.resultSearchList.length === 0;
   }
 
-
   constructor(
     private fb: FormBuilder,
     private httpClient: HttpClient,
     private searchService: SearchService,
     private elementRef: ElementRef,
-    private ref: ChangeDetectorRef
+    private ref: ChangeDetectorRef,
+    private renderer: Renderer2
   ) {};
 
   ngOnInit(): void {
@@ -72,7 +71,6 @@ export class SearchComponent implements OnInit, OnDestroy{
   };
 
   init(): void{
-
     this.searchInputControl.valueChanges.pipe(
       tap((value: string) => {
         this.isLoading = true;
@@ -80,14 +78,13 @@ export class SearchComponent implements OnInit, OnDestroy{
           this.isLoading = false;
           this.resultSearchList = [];
           this.isSelectedItem = false;
-          this.ref.markForCheck();
         }
         this.ref.markForCheck();
       }),
       filter((value: string) => value.length > 0),
       distinctUntilChanged(),
       debounceTime(1000),
-      switchMap( (value: string): Observable<SearchResultData> => this.goToSearch(value.trim())),
+      switchMap( (value: string): Observable<SearchResultData> => this.goToSearch(value)),
       takeUntil(this.destroy$),
     ).subscribe()
   }
@@ -109,7 +106,7 @@ export class SearchComponent implements OnInit, OnDestroy{
       }
     }
 
-   return this.searchService.getResult(searchText,page).pipe(
+   return this.searchService.getResult(searchText.trim(),page).pipe(
 
       tap((searchResult: SearchResultData) => {
        if(searchResult.items.length > 0 && this.searchInputControl.value.length > 0){
@@ -117,7 +114,6 @@ export class SearchComponent implements OnInit, OnDestroy{
          this.isSelectedItem = true;
          this.remainItem = searchResult.totalItems - searchResult.endIndex;
          this.resultSearchList = [...this.resultSearchList, ...searchResult.items];
-         this.ref.markForCheck();
        }
 
        if(searchResult.items.length === 0){
@@ -125,44 +121,57 @@ export class SearchComponent implements OnInit, OnDestroy{
          this.resultSearchList = [];
          this.remainItem = 0;
          this.isSelectedItem = true;
-         this.ref.markForCheck();
        }
-
+        this.ref.markForCheck();
       }),
       delay(1000),
       tap(() => {
-        if(this.searchResult && this.searchResult.nativeElement.lastElementChild !== null){
-          this.infiniteScrollObserver.observe(this.searchResult.nativeElement.lastElementChild);
+        const searchResultList = this.searchResult?.nativeElement.querySelectorAll('.result-search-item');
+        if(!searchResultList) {
+          return
         }
+
+        searchResultList.forEach((item) => {
+          let itemIndex = item.getAttribute('index');
+
+          if(item.classList.contains('last-item')){
+            this.renderer.removeClass(item,'last-item')
+          }
+
+          if(itemIndex){
+            +itemIndex === 0 ? this.renderer.addClass(item, 'first-item')
+              : +itemIndex === this.resultSearchList.length - 1 ? (this.renderer.addClass(item, 'last-item') , this.infiniteScrollObserver.observe(item))
+                : this.renderer.addClass(item, 'search-item');
+          }
+        })
       }),
       takeUntil(this.destroy$)
     )
   }
 
-  selectByClick(event: MouseEvent): void{
-    const target = event.target as HTMLDivElement;
-    this.searchInputControl.setValue(target.innerText, {emitEvent: false});
+  selectByClick(value: string): void{
+    this.searchInputControl.setValue(value, {emitEvent: false});
     this.isSelectedItem = false;
     this.ref.markForCheck()
   }
 
-  selectByKey(event: KeyboardEvent): void{
+  selectByKey(event: KeyboardEvent, value: string): void{
 
     if(event.code === 'Enter' || event.code === 'NumpadEnter'){
-      const target = event.target as HTMLDivElement;
-      this.searchInputControl.setValue(target.innerText, {emitEvent: false});
+      this.searchInputControl.setValue(value, {emitEvent: false});
       this.isSelectedItem = false;
-      this.ref.markForCheck()
     }
 
     if(event.code === 'ArrowUp' || event.code === 'ArrowDown'){
       event.preventDefault();
-      this.focusSiblingItem(event.code)
+      this.focusSiblingItem(event.code);
     }
+
+    this.ref.markForCheck()
   }
 
   focusResultFirstItem(keyup: KeyboardEvent): void{
-    const firstItem = this.searchResult?.nativeElement.getElementsByClassName('first-item')[0] as HTMLDivElement;
+    const firstItem = this.searchResult?.nativeElement.querySelector('.first-item') as HTMLDivElement;
 
     if(keyup.code === 'ArrowDown' && firstItem){
       firstItem.tabIndex = -1;
@@ -171,18 +180,25 @@ export class SearchComponent implements OnInit, OnDestroy{
   };
 
   private focusSiblingItem(keyCode: string): void {
-    const item = document.activeElement as HTMLElement;
-    const firstItem = this.searchResult?.nativeElement.getElementsByClassName('first-item')[0] as HTMLDivElement;
-    const lastItem =this.searchResult?.nativeElement.getElementsByClassName('last-item')[0] as HTMLDivElement;
-    if(keyCode === 'ArrowUp' || keyCode === 'ArrowDown'){
 
-      if(item[NextOrPrevSibling[keyCode]] && item[NextOrPrevSibling[keyCode]]?.classList.contains('result-search-item')){
-        this.activateFocus(item[NextOrPrevSibling[keyCode]] as HTMLElement);
-        item.tabIndex = -1;
-      }else{
-        keyCode === 'ArrowUp'? this.activateFocus(lastItem) : this.activateFocus(firstItem);
-        item.tabIndex = -1;
-      }
+    if(!(keyCode === 'ArrowUp' || keyCode === 'ArrowDown')){
+      return
+    }
+
+    const item = document.activeElement as HTMLElement;
+    const firstItem = this.searchResult?.nativeElement.querySelector('.first-item') as HTMLDivElement;
+    const lastItem =this.searchResult?.nativeElement.querySelector('.last-item') as HTMLDivElement;
+
+    if(!item[NextOrPrevSibling[keyCode]]){
+      keyCode === 'ArrowUp'? this.activateFocus(lastItem) : this.activateFocus(firstItem);
+      item.tabIndex = -1;
+
+      return
+    }
+
+    if(item[NextOrPrevSibling[keyCode]]?.classList.contains('result-search-item')){
+      this.activateFocus(item[NextOrPrevSibling[keyCode]] as HTMLElement);
+      item.tabIndex = -1;
     }
   };
 

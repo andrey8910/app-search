@@ -5,7 +5,6 @@
       <mat-label>enter text to search</mat-label>
       <input
         matInput
-        #inputSearch
         type="text"
         autofocus
         [formControl]="searchInputControl"
@@ -22,16 +21,16 @@
         <p>text not found</p>
       </div>
       <div #searchResult class="result-search-list" >
-        <p>test</p>
+
         <div class="result-search-item"
              *ngFor="let searchItem of resultSearchList; let i = index"
-             [ngClass]="i === 0 ? 'first-item': i === resultSearchList.length - 1 ? 'last-item' : 'search-item' "
-             (click)="selectByClick($event)"
-             (keydown)="selectByKey($event)"
+             [attr.index] = i
+             (click)="selectByClick(searchItem.title)"
+             (keydown)="selectByKey($event, searchItem.title)"
         >
           <p>{{searchItem.title}}</p>
         </div>
-        <p>test</p>
+
       </div>
     </div>
   </ng-container>
