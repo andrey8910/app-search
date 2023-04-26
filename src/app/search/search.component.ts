@@ -2,7 +2,7 @@ import {
   ChangeDetectionStrategy,
   ChangeDetectorRef,
   Component,
-  ElementRef, OnDestroy,
+  ElementRef, Input, OnDestroy,
   OnInit, Renderer2,
   ViewChild
 } from '@angular/core';
@@ -16,10 +16,12 @@ import {
   delay, filter, Observable, switchMap,
 } from "rxjs";
 import { distinctUntilChanged } from 'rxjs/operators';
-import {SearchService} from "../search.service";
+import {SearchService} from "../services/search.service";
 import {NextOrPrevSibling} from '../next-or-prev-sibling';
 import {SearchResultData} from "../interfaces/search-result-data";
 import {SearchResultItem} from "../interfaces/search-result-item";
+import {SearchParam} from "../interfaces/search-param";
+import {SearchResultDb, SearchResultDbData} from "../interfaces/search-result-db";
 
 @Component({
   selector: 'app-search',
@@ -29,6 +31,8 @@ import {SearchResultItem} from "../interfaces/search-result-item";
 })
 export class SearchComponent implements OnInit, OnDestroy{
 
+  @Input() searchBy : SearchParam | null = null;
+
   @ViewChild('searchBlock', {static: false}) searchBlock: ElementRef<HTMLDivElement>;
   @ViewChild('searchResult', {static: false}) searchResult: ElementRef<HTMLDivElement>;
 
@@ -36,13 +40,14 @@ export class SearchComponent implements OnInit, OnDestroy{
    isSelectedItem = false;
    searchInputControl = this.fb.nonNullable.control('');
    resultSearchList : SearchResultItem[] = [];
+   resultSearchDbList : SearchResultDb[] = []
    infiniteScrollObserver = new IntersectionObserver(
     ([entry], observer) =>{
       if(entry.isIntersecting){
         observer.unobserve(entry.target);
-        if(this.remainItem > 0){
+        if(this.searchBy === 'api' && this.remainItem > 0){
           this.isLoading = true;
-          this.goToSearch(this.searchInputControl.value, this.nextPage++).pipe(takeUntil(this.destroy$)).subscribe();
+          this.goToSearchByAPI(this.searchInputControl.value, this.nextPage++).pipe(takeUntil(this.destroy$)).subscribe();
         }
         this.ref.markForCheck();
       }
@@ -53,8 +58,12 @@ export class SearchComponent implements OnInit, OnDestroy{
   private nextPage = 2;
   private remainItem = 0;
 
-  get isNotFound(): boolean {
+  get isNotFoundAPI(): boolean {
     return this.resultSearchList.length === 0;
+  };
+
+  get isNotFoundDB(): boolean {
+    return this.resultSearchDbList.length === 0;
   }
 
   constructor(
@@ -71,6 +80,7 @@ export class SearchComponent implements OnInit, OnDestroy{
   };
 
   init(): void{
+
     this.searchInputControl.valueChanges.pipe(
       tap((value: string) => {
         this.isLoading = true;
@@ -84,16 +94,53 @@ export class SearchComponent implements OnInit, OnDestroy{
       filter((value: string) => value.length > 0),
       distinctUntilChanged(),
       debounceTime(1000),
-      switchMap( (value: string): Observable<SearchResultData> => this.goToSearch(value)),
+      switchMap( (value: string): Observable<SearchResultData | SearchResultDbData> => this.goToSearch(value)),
+      delay(1000),
+      tap(() => {
+        const searchResultList = this.searchResult?.nativeElement.querySelectorAll('.result-search-item');
+
+        if(!searchResultList) {
+          return
+        }
+
+        searchResultList.forEach((item) => {
+          let itemIndex = item.getAttribute('index');
+
+          if(item.classList.contains('last-item')){
+            this.renderer.removeClass(item,'last-item')
+          }
+
+          if(itemIndex){
+            +itemIndex === 0 ? this.renderer.addClass(item, 'first-item')
+              : +itemIndex === searchResultList.length - 1 ? (this.renderer.addClass(item, 'last-item') , this.infiniteScrollObserver.observe(item))
+                : this.renderer.addClass(item, 'search-item');
+          }
+        })
+      }),
       takeUntil(this.destroy$),
     ).subscribe()
-  }
+  };
 
   getErrorMessage(): string {
     return this.searchInputControl.hasError('pattern') ? 'only letters of the Latin alphabet' : '';
-  }
+  };
 
-  goToSearch(searchText: string, page?: number): Observable<SearchResultData>{
+  goToSearch(searchText: string): Observable<SearchResultData> | Observable<SearchResultDbData>{
+    return this.searchBy === 'db' ? this.goToSearchByDB() : this.goToSearchByAPI(searchText);
+  };
+
+  goToSearchByDB(): Observable<SearchResultDbData>{
+   return this.searchService.getUsersDB().pipe(
+     tap((res: SearchResultDbData) => {
+       this.isLoading = false;
+       this.isSelectedItem = true;
+       this.resultSearchDbList = res.users;
+       this.ref.markForCheck();
+     })
+   )
+  };
+
+  goToSearchByAPI(searchText: string, page?: number): Observable<SearchResultData>{
 
     if(!page){
       this.nextPage = 2;
@@ -106,7 +153,7 @@ export class SearchComponent implements OnInit, OnDestroy{
       }
     }
 
-   return this.searchService.getResult(searchText.trim(),page).pipe(
+   return this.searchService.getResultAPI(searchText.trim(),page).pipe(
 
       tap((searchResult: SearchResultData) => {
        if(searchResult.items.length > 0 && this.searchInputControl.value.length > 0){
@@ -123,27 +170,6 @@ export class SearchComponent implements OnInit, OnDestroy{
          this.isSelectedItem = true;
        }
         this.ref.markForCheck();
-      }),
-      delay(1000),
-      tap(() => {
-        const searchResultList = this.searchResult?.nativeElement.querySelectorAll('.result-search-item');
-        if(!searchResultList) {
-          return
-        }
-
-        searchResultList.forEach((item) => {
-          let itemIndex = item.getAttribute('index');
-
-          if(item.classList.contains('last-item')){
-            this.renderer.removeClass(item,'last-item')
-          }
-
-          if(itemIndex){
-            +itemIndex === 0 ? this.renderer.addClass(item, 'first-item')
-              : +itemIndex === this.resultSearchList.length - 1 ? (this.renderer.addClass(item, 'last-item') , this.infiniteScrollObserver.observe(item))
-                : this.renderer.addClass(item, 'search-item');
-          }
-        })
       }),
       takeUntil(this.destroy$)
     )
@@ -170,10 +196,10 @@ export class SearchComponent implements OnInit, OnDestroy{
     this.ref.markForCheck()
   }
 
-  focusResultFirstItem(keyup: KeyboardEvent): void{
+  focusResultFirstItem(): void{
     const firstItem = this.searchResult?.nativeElement.querySelector('.first-item') as HTMLDivElement;
 
-    if(keyup.code === 'ArrowDown' && firstItem){
+    if(firstItem){
       firstItem.tabIndex = -1;
       firstItem.focus();
     }

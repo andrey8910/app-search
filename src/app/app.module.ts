@@ -11,10 +11,14 @@ import {ReactiveFormsModule} from "@angular/forms";
 import {MatFormFieldModule} from "@angular/material/form-field";
 import {MatInputModule} from "@angular/material/input";
 import {MatCardModule} from "@angular/material/card";
+import { SearchByDbPipe } from './pipes/search-by-db.pipe';
+import {HighlightPipe} from "./pipes/highlight.pipe";
 @NgModule({
   declarations: [
     AppComponent,
-    SearchComponent
+    SearchComponent,
+    SearchByDbPipe,
+    HighlightPipe
   ],
   imports: [
     BrowserModule,
@@ -27,7 +31,7 @@ import {MatCardModule} from "@angular/material/card";
     MatInputModule,
     MatCardModule
   ],
-  providers: [],
+  providers: [SearchByDbPipe, HighlightPipe],
   bootstrap: [AppComponent]
 })
 export class AppModule { }

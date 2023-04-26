@@ -66,14 +66,16 @@
   border-bottom: 1px solid gainsboro;
 }
 .result-search-item p {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   margin: 0;
   padding: 0;
   height: 30px;
-  line-height: 200%;
-  vertical-align: middle;
   overflow: hidden;
 }
-.result-search-item :hover{
+
+.result-search-item p:hover{
   cursor: pointer;
   background-color: rgba(0,0,0, 0.1);
 }

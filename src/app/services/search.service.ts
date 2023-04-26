@@ -1,7 +1,8 @@
 import { Injectable } from '@angular/core';
 import {HttpClient} from "@angular/common/http";
 import {map, Observable} from "rxjs";
-import {SearchResultData} from "./interfaces/search-result-data";
+import {SearchResultData} from "../interfaces/search-result-data";
+import {SearchResultDbData} from "../interfaces/search-result-db";
 
 
 @Injectable({
@@ -11,7 +12,7 @@ export class SearchService {
 
   constructor(private httpClient: HttpClient) { }
 
-  public getResult(searchText: string, page = 1): Observable<SearchResultData>{
+  getResultAPI(searchText: string, page = 1): Observable<SearchResultData>{
     return this.httpClient.get<SearchResultData>(`https://chroniclingamerica.loc.gov/search/titles/results/?terms=${searchText}&format=json&page=${page}`).pipe(
       map((res:SearchResultData) => {
         const searchResult : SearchResultData = {
@@ -25,6 +26,12 @@ export class SearchService {
         return searchResult;
       })
     )
+  };
+
+  getUsersDB(): Observable<SearchResultDbData>{
+    return this.httpClient.get<SearchResultDbData>('./assets/users.json').pipe(
+
+    );
   }
 
 }

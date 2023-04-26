@@ -8,7 +8,7 @@
         type="text"
         autofocus
         [formControl]="searchInputControl"
-        (keyup)="focusResultFirstItem($event)"
+        (keyup.arrowDown) ="focusResultFirstItem()"
       >
       <mat-spinner matSuffix class="progress-spinner" [diameter]="22" *ngIf="isLoading" ></mat-spinner>
       <mat-error *ngIf="searchInputControl.invalid">{{getErrorMessage()}}</mat-error>
@@ -17,20 +17,42 @@
     <ng-container *ngIf="isSelectedItem">
 
     <div #searchBlock class="result-search-block">
-      <div class="not-found" *ngIf="isNotFound">
-        <p>text not found</p>
-      </div>
+
       <div #searchResult class="result-search-list" >
 
-        <div class="result-search-item"
-             *ngFor="let searchItem of resultSearchList; let i = index"
-             [attr.index] = i
-             (click)="selectByClick(searchItem.title)"
-             (keydown)="selectByKey($event, searchItem.title)"
-        >
-          <p>{{searchItem.title}}</p>
-        </div>
+        <ng-container *ngIf="searchBy === 'db'">
+          <div class="result-search-item"
+               *ngFor="let searchItem of resultSearchDbList | searchByDb : searchInputControl.value; let i = index"
+               [attr.index] = i
+               (click)="selectByClick(searchItem.firstName + ' ' + searchItem.lastName)"
+               (keydown)="selectByKey($event, searchItem.firstName + ' ' + searchItem.lastName)"
+          >
+            <p>
+              <span [innerHTML] = "searchItem.firstName | highlight :  searchInputControl.value"></span>
+              <span [innerHTML] = "searchItem.lastName | highlight :  searchInputControl.value"></span>
+              <span [innerHTML] = "searchItem.maidenName | highlight :  searchInputControl.value "></span>
+              <span [innerHTML] = "searchItem.email | highlight :  searchInputControl.value"></span>
+            </p>
 
+          </div>
+
+        </ng-container>
+
+        <ng-container *ngIf="searchBy === 'api'">
+          <div class="result-search-item"
+               *ngFor="let searchItem of resultSearchList; let i = index"
+               [attr.index] = i
+               (click)="selectByClick(searchItem.title)"
+               (keydown)="selectByKey($event, searchItem.title)"
+          >
+            <p>{{searchItem.title}}</p>
+          </div>
+        </ng-container>
+
+      </div>
+
+      <div class="not-found" *ngIf="!searchResult.firstElementChild">
+        <p>text not found</p>
       </div>
     </div>
   </ng-container>
