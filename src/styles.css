@@ -9,5 +9,6 @@ body {
 
 }
 .highlight{
-  color: red
+  background-color: rgba(0,0,0,0.1);
+  color: red;
 }

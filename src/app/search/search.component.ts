@@ -20,7 +20,7 @@ import {SearchService} from "../services/search.service";
 import {NextOrPrevSibling} from '../next-or-prev-sibling';
 import {SearchResultData} from "../interfaces/search-result-data";
 import {SearchResultItem} from "../interfaces/search-result-item";
-import {SearchParam} from "../interfaces/search-param";
+import {SearchField, SearchParam} from "../interfaces/search-param";
 import {SearchResultDb, SearchResultDbData} from "../interfaces/search-result-db";
 
 @Component({
@@ -32,15 +32,19 @@ import {SearchResultDb, SearchResultDbData} from "../interfaces/search-result-db
 export class SearchComponent implements OnInit, OnDestroy{
 
   @Input() searchBy : SearchParam | null = null;
+  @Input() searchFields: SearchField[] | null = null;
 
   @ViewChild('searchBlock', {static: false}) searchBlock: ElementRef<HTMLDivElement>;
   @ViewChild('searchResult', {static: false}) searchResult: ElementRef<HTMLDivElement>;
 
    isLoading = false;
    isSelectedItem = false;
+
    searchInputControl = this.fb.nonNullable.control('');
+   searchFieldSelectionControl = this.fb.nonNullable.control([]);
+
    resultSearchList : SearchResultItem[] = [];
-   resultSearchDbList : SearchResultDb[] = []
+   resultSearchDbList : SearchResultDb[] = [];
    infiniteScrollObserver = new IntersectionObserver(
     ([entry], observer) =>{
       if(entry.isIntersecting){
@@ -53,6 +57,7 @@ export class SearchComponent implements OnInit, OnDestroy{
       }
     }, {threshold: 1}
   );
+
 
   private destroy$ = new Subject<void>();
   private nextPage = 2;
@@ -94,7 +99,9 @@ export class SearchComponent implements OnInit, OnDestroy{
       filter((value: string) => value.length > 0),
       distinctUntilChanged(),
       debounceTime(1000),
-      switchMap( (value: string): Observable<SearchResultData | SearchResultDbData> => this.goToSearch(value)),
+      switchMap( (value: string): Observable<SearchResultData | SearchResultDbData> => {
+        return this.searchBy === 'db' ? this.goToSearchByDB() : this.goToSearchByAPI(value);
+      }),
       delay(1000),
       tap(() => {
         const searchResultList = this.searchResult?.nativeElement.querySelectorAll('.result-search-item');
@@ -125,9 +132,9 @@ export class SearchComponent implements OnInit, OnDestroy{
     return this.searchInputControl.hasError('pattern') ? 'only letters of the Latin alphabet' : '';
   };
 
-  goToSearch(searchText: string): Observable<SearchResultData> | Observable<SearchResultDbData>{
-    return this.searchBy === 'db' ? this.goToSearchByDB() : this.goToSearchByAPI(searchText);
-  };
+  // goToSearch(searchText: string): Observable<SearchResultData> | Observable<SearchResultDbData>{
+  //   return this.searchBy === 'db' ? this.goToSearchByDB() : this.goToSearchByAPI(searchText);
+  // };
 
   goToSearchByDB(): Observable<SearchResultDbData>{
    return this.searchService.getUsersDB().pipe(

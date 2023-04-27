@@ -18,13 +18,18 @@
 }
 .input-search-block{
   display: flex;
+  flex-direction: column;
   width: 100%;
-  align-items: center;
-  justify-items: center;
-  justify-content: space-between;
 }
 .input-search-block input{
   font-size: 18px;
+}
+.input-search-block .input-search{
+
+}
+
+.input-search-block .input-search-filter{
+  max-width: 200px;
 }
 
 .input-search-block .progress-spinner{
@@ -67,12 +72,12 @@
 }
 .result-search-item p {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 10px;
+  gap: 6px;
   margin: 0;
   padding: 0;
-  height: 30px;
-  overflow: hidden;
+  min-height: 30px;
 }
 
 .result-search-item p:hover{

@@ -6,6 +6,7 @@ import { AppComponent } from './app.component';
 import { SearchComponent } from './search/search.component';
 import {HttpClientModule} from "@angular/common/http";
 import {MatProgressSpinnerModule} from '@angular/material/progress-spinner';
+import {MatSelectModule} from '@angular/material/select';
 import {BrowserAnimationsModule} from '@angular/platform-browser/animations';
 import {ReactiveFormsModule} from "@angular/forms";
 import {MatFormFieldModule} from "@angular/material/form-field";
@@ -26,6 +27,7 @@ import {HighlightPipe} from "./pipes/highlight.pipe";
     HttpClientModule,
     BrowserAnimationsModule,
     MatProgressSpinnerModule,
+    MatSelectModule,
     ReactiveFormsModule,
     MatFormFieldModule,
     MatInputModule,

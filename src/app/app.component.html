@@ -7,8 +7,19 @@
 
   <div class="search-section-middle section">
     <p>search by DB</p>
-    <app-search searchBy="db" ></app-search>
+    <app-search searchBy="db" [searchFields]="['firstName', 'lastName', 'maidenName', 'email', 'username', 'university']"></app-search>
   </div>
+
+  <div class="search-section-small section">
+    <p>search by DB</p>
+    <app-search searchBy="db" [searchFields]="['email', 'username', 'university']"></app-search>
+  </div>
+
+  <div class="search-section-small section">
+    <p>search by DB</p>
+    <app-search searchBy="db"></app-search>
+  </div>
+
 
 
 </div>

@@ -1,8 +1,9 @@
 
 <div class="search-section">
 
-    <mat-form-field class="input-search-block">
-      <mat-label>enter text to search</mat-label>
+  <div class="input-search-block">
+    <mat-form-field class="input-search">
+      <mat-label>Enter text to search</mat-label>
       <input
         matInput
         type="text"
@@ -14,6 +15,17 @@
       <mat-error *ngIf="searchInputControl.invalid">{{getErrorMessage()}}</mat-error>
     </mat-form-field>
 
+    <mat-form-field
+      *ngIf="searchBy === 'db' && searchFields"
+      class="input-search-filter"
+      appearance="fill">
+      <mat-label>Search filter</mat-label>
+      <mat-select [formControl]="searchFieldSelectionControl" multiple>
+        <mat-option *ngFor="let searchField of searchFields" [value]="searchField">{{searchField}}</mat-option>
+      </mat-select>
+    </mat-form-field>
+  </div>
+
     <ng-container *ngIf="isSelectedItem">
 
     <div #searchBlock class="result-search-block">
@@ -22,16 +34,17 @@
 
         <ng-container *ngIf="searchBy === 'db'">
           <div class="result-search-item"
-               *ngFor="let searchItem of resultSearchDbList | searchByDb : searchInputControl.value; let i = index"
+               *ngFor="let searchItem of resultSearchDbList | searchByDb : searchInputControl.value : searchFieldSelectionControl.value; let i = index"
                [attr.index] = i
                (click)="selectByClick(searchItem.firstName + ' ' + searchItem.lastName)"
                (keydown)="selectByKey($event, searchItem.firstName + ' ' + searchItem.lastName)"
           >
             <p>
-              <span [innerHTML] = "searchItem.firstName | highlight :  searchInputControl.value"></span>
-              <span [innerHTML] = "searchItem.lastName | highlight :  searchInputControl.value"></span>
-              <span [innerHTML] = "searchItem.maidenName | highlight :  searchInputControl.value "></span>
-              <span [innerHTML] = "searchItem.email | highlight :  searchInputControl.value"></span>
+              {{searchItem.firstName}}
+              {{searchItem.lastName}}
+              <span *ngFor="let searchResultItem of searchFieldSelectionControl.value">
+                ({{searchResultItem}}: <span [innerHTML] = "searchItem[searchResultItem] | highlight :  searchInputControl.value"></span>)
+              </span>
             </p>
 
           </div>
